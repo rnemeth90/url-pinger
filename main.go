@@ -64,7 +64,7 @@ func main() {
 
 	var count int
 	for {
-		url = ParseURL(url)
+		url = parseURI(url)
 		statusCode, err := getResult(url)
 		if err != nil {
 			log.Fatal(err)
@@ -77,8 +77,7 @@ func main() {
 	}
 }
 
-// ParseURL will parse a URL string into proper format
-func ParseURL(url string) string {
+func parseURI(url string) string {
 	if !strings.Contains(url, "://") {
 		if useHttp {
 			url = "http://" + url
