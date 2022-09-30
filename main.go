@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type httpResponse struct {
 	status          string
 	host            string
 	responseHeaders map[string]string
+	time            int64
 }
 
 var (
@@ -49,6 +51,8 @@ func usage() {
 func main() {
 	flag.Parse()
 
+	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 1, '\t', tabwriter.AlignRight)
+
 	args := flag.Args()
 	if len(args) != 1 {
 		flag.Usage()
@@ -63,17 +67,20 @@ func main() {
 	}
 
 	var count int
+	fmt.Fprintln(writer, "Count\tUrl\tResult\tTime\tHeaders")
+	fmt.Fprintln(writer, "-----\t---\t------\t----\t-------")
 	for {
 		url = parseURI(url)
-		statusCode, err := getResult(url)
+		status, err := getResult(url)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		headerValues := handleMap(statusCode.responseHeaders)
-		fmt.Printf("[%d]\t[%s]\t[%s]\t[%s]\n", count, url, statusCode.status, headerValues)
+		headerValues := handleMap(status.responseHeaders)
+		fmt.Fprintf(writer, "[%d]\t[%s]\t[%s]\t[%dms]\t[%s]\n", count, url, status.status, status.time, headerValues)
 		time.Sleep(time.Second * time.Duration(delay))
 		count++
+		writer.Flush()
 	}
 }
 
@@ -95,7 +102,9 @@ func getResult(url string) (httpResponse, error) {
 	}
 
 	client := &http.Client{Transport: tr}
+	start := time.Now()
 	response, err := client.Get(url)
+	end := time.Since(start).Milliseconds()
 	if err != nil {
 		return httpResponse{}, err
 	}
@@ -111,6 +120,7 @@ func getResult(url string) (httpResponse, error) {
 		status:          response.Status,
 		host:            response.Header.Get("Host"),
 		responseHeaders: h,
+		time:            end,
 	}, nil
 }
 
