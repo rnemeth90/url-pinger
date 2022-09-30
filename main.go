@@ -55,7 +55,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	uri := args[0]
+	url := args[0]
 
 	if example {
 		printExampleUsage()
@@ -64,38 +64,39 @@ func main() {
 
 	var count int
 	for {
-		uri = parseURI(uri)
-		statusCode, err := getResult(uri)
+		url = ParseURL(url)
+		statusCode, err := getResult(url)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		headerValues := handleMap(statusCode.responseHeaders)
-		fmt.Printf("[%d]\t[%s]\t[%s]\t[%s]\n", count, uri, statusCode.status, headerValues)
+		fmt.Printf("[%d]\t[%s]\t[%s]\t[%s]\n", count, url, statusCode.status, headerValues)
 		time.Sleep(time.Second * time.Duration(delay))
 		count++
 	}
 }
 
-func parseURI(uri string) string {
-	if !strings.Contains(uri, "://") {
+// ParseURL will parse a URL string into proper format
+func ParseURL(url string) string {
+	if !strings.Contains(url, "://") {
 		if useHttp {
-			uri = "http://" + uri
+			url = "http://" + url
 		} else {
-			uri = "https://" + uri
+			url = "https://" + url
 		}
 	}
-	return uri
+	return url
 }
 
-func getResult(uri string) (httpResponse, error) {
+func getResult(url string) (httpResponse, error) {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
 	client := &http.Client{Transport: tr}
-	response, err := client.Get(uri)
+	response, err := client.Get(url)
 	if err != nil {
 		return httpResponse{}, err
 	}
