@@ -67,8 +67,8 @@ func main() {
 	}
 
 	var count int
-	fmt.Fprintln(writer, "Count\tUrl\tResult\tTime\tHeaders")
-	fmt.Fprintln(writer, "-----\t---\t------\t----\t-------")
+	fmt.Fprintln(writer, "Time\tCount\tUrl\tResult\tTime\tHeaders")
+	fmt.Fprintln(writer, "-----\t-----\t---\t------\t----\t-------")
 	for {
 		url = parseURI(url)
 		status, err := getResult(url)
@@ -77,7 +77,7 @@ func main() {
 		}
 
 		headerValues := handleMap(status.responseHeaders)
-		fmt.Fprintf(writer, "[%d]\t[%s]\t[%s]\t[%dms]\t[%s]\n", count, url, status.status, status.time, headerValues)
+		fmt.Fprintf(writer, "[%v]\t[%d]\t[%s]\t[%s]\t[%dms]\t[%s]\n", time.Now().Format(time.RFC3339), count, url, status.status, status.time, headerValues)
 		time.Sleep(time.Second * time.Duration(delay))
 		count++
 		writer.Flush()
