@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"text/tabwriter"
 	"time"
 )
@@ -16,7 +18,7 @@ type httpResponse struct {
 	status          string
 	host            string
 	responseHeaders map[string]string
-	time            int64
+	latency         int64
 }
 
 var (
@@ -24,13 +26,13 @@ var (
 	example         bool
 	delay           int
 	responseHeaders string
-	useHttp         bool
+	useHTTP         bool
 	version         = "devel" // for -v flag, updated during the release process with -ldflags=-X=main.version=...
 )
 
 func init() {
 	flag.BoolVar(&example, "example", false, "Print example usage")
-	flag.BoolVar(&useHttp, "useHttp", false, "Default to HTTP instead of HTTPS")
+	flag.BoolVar(&useHTTP, "usehttp", false, "Default to HTTP instead of HTTPS")
 	flag.IntVar(&delay, "delay", 0, "The time between in requests, in seconds")
 	flag.StringVar(&responseHeaders, "responseHeaders", "", "Comma delimited list of response headers to return")
 	flag.Usage = usage
@@ -59,43 +61,59 @@ func main() {
 		os.Exit(2)
 	}
 
-	url := args[0]
-
 	if example {
 		printExampleUsage()
 		os.Exit(0)
 	}
 
-	var count int
+	url := args[0]
+	if !strings.Contains(url, "://") {
+		url = parseURI(url)
+	}
+
+	var count int = 0
+	var responses []httpResponse
+	var httpErr error
+
 	fmt.Fprintln(writer, "Time\tCount\tUrl\tResult\tTime\tHeaders")
 	fmt.Fprintln(writer, "-----\t-----\t---\t------\t----\t-------")
+
+	// capture a ctrl+c event, to print out statistics at the end
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Printf("Total Requests: %d\n", count-1)
+		os.Exit(0)
+	}()
+
 	for {
-		url = parseURI(url)
-		status, err := getResult(url)
-		if err != nil {
-			log.Fatal(err)
+		responses, httpErr = getResult(url)
+		if httpErr != nil {
+			log.Fatal(httpErr)
 		}
 
-		headerValues := handleMap(status.responseHeaders)
-		fmt.Fprintf(writer, "[%v]\t[%d]\t[%s]\t[%s]\t[%dms]\t[%s]\n", time.Now().Format(time.RFC3339), count, url, status.status, status.time, headerValues)
+		for _, status := range responses {
+			headerValues := handleMap(status.responseHeaders)
+			fmt.Fprintf(writer, "[%v]\t[%d]\t[%s]\t[%s]\t[%dms]\t[%s]\n", time.Now().Format(time.RFC3339), count, url, status.status, status.latency, headerValues)
+			count++
+		}
+
 		time.Sleep(time.Second * time.Duration(delay))
-		count++
 		writer.Flush()
 	}
 }
 
 func parseURI(url string) string {
-	if !strings.Contains(url, "://") {
-		if useHttp {
-			url = "http://" + url
-		} else {
-			url = "https://" + url
-		}
+	if !useHTTP {
+		return "https://" + url
 	}
-	return url
+	return "http://" + url
 }
 
-func getResult(url string) (httpResponse, error) {
+func getResult(url string) ([]httpResponse, error) {
+
+	var responses []httpResponse
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -106,7 +124,7 @@ func getResult(url string) (httpResponse, error) {
 	response, err := client.Get(url)
 	end := time.Since(start).Milliseconds()
 	if err != nil {
-		return httpResponse{}, err
+		return nil, err
 	}
 	defer response.Body.Close()
 
@@ -116,12 +134,14 @@ func getResult(url string) (httpResponse, error) {
 		h[value] = response.Header.Get(value)
 	}
 
-	return httpResponse{
+	r := httpResponse{
 		status:          response.Status,
 		host:            response.Header.Get("Host"),
 		responseHeaders: h,
-		time:            end,
-	}, nil
+		latency:         end,
+	}
+	responses = append(responses, r)
+	return responses, nil
 }
 
 func handleMap(m map[string]string) string {
