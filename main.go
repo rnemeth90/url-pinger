@@ -83,6 +83,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
+		fmt.Println()
 		fmt.Printf("Total Requests: %d\n", count-1)
 		os.Exit(0)
 	}()
