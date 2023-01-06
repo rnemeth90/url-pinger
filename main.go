@@ -38,9 +38,9 @@ func init() {
 }
 
 func printExampleUsage() {
-	fmt.Println("url-pinger https://www.google.com")
-	fmt.Println("url-pinger -delay 2 https://www.google.com")
-	fmt.Println("url-pinger -delay 2 -responseheaders x-sid https://www.google.com")
+	fmt.Println("httping https://www.google.com")
+	fmt.Println("httping -delay 2 https://www.google.com")
+	fmt.Println("httping -delay 2 -responseheaders x-sid https://www.google.com")
 }
 
 func usage() {

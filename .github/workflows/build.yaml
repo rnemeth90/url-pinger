@@ -44,7 +44,7 @@ jobs:
           go mod init ${GITHUB_REPOSITORY}
         fi
         go mod tidy
-        go build -o httpbench -ldflags "-X main.Version=${GITHUB_REF_NAME} -X main.BuiltBy=github-actions" main.go
+        go build -o httping -ldflags "-X main.Version=${GITHUB_REF_NAME} -X main.BuiltBy=github-actions" main.go
         execFile=$(find . -type f -executable)
 
     - run: git version
@@ -83,6 +83,6 @@ jobs:
       with:
         name: ${{ env.GITHUB_REF_NAME }}
         tag: ${{ env.GITHUB_REF_NAME }}
-        artifacts: "httpbench"
+        artifacts: "httping"
         bodyFile: "body.log"
         token: ${{ secrets.GITHUB_TOKEN }}

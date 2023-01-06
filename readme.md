@@ -1,4 +1,4 @@
-# url-pinger
+# httping
 
 TODO:
 - [ ] Finish readme
