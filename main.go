@@ -146,9 +146,7 @@ func getResult(url string) ([]httpResponse, error) {
 
 func handleMap(m map[string]string) string {
 	var result string
-
 	for k, v := range m {
-
 		if len(m) > 1 {
 			result += fmt.Sprintf(" {%s:%s} ", k, v)
 		} else {
