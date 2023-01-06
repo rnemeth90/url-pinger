@@ -27,25 +27,24 @@ var (
 	delay           int
 	responseHeaders string
 	useHTTP         bool
-	version         = "devel" // for -v flag, updated during the release process with -ldflags=-X=main.version=...
 )
 
 func init() {
 	flag.BoolVar(&example, "example", false, "Print example usage")
-	flag.BoolVar(&useHTTP, "usehttp", false, "Default to HTTP instead of HTTPS")
-	flag.IntVar(&delay, "delay", 0, "The time between in requests, in seconds")
-	flag.StringVar(&responseHeaders, "responseHeaders", "", "Comma delimited list of response headers to return")
+	flag.BoolVar(&useHTTP, "usehttp", false, "[Optional] Use HTTP instead of HTTPS")
+	flag.IntVar(&delay, "delay", 0, "[Optional] The time between in requests, in seconds")
+	flag.StringVar(&responseHeaders, "responseheaders", "", "[Optional] Comma delimited list of response headers to return")
 	flag.Usage = usage
 }
 
 func printExampleUsage() {
 	fmt.Println("url-pinger https://www.google.com")
 	fmt.Println("url-pinger -delay 2 https://www.google.com")
+	fmt.Println("url-pinger -delay 2 -responseheaders x-sid https://www.google.com")
 }
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] URL\n\n", os.Args[0])
-	fmt.Println("***If you do not specify the protocol in the URL, we default to HTTPS")
 	fmt.Fprintln(os.Stderr, "OPTIONS:")
 	flag.PrintDefaults()
 }
@@ -58,7 +57,7 @@ func main() {
 	args := flag.Args()
 	if len(args) != 1 {
 		flag.Usage()
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	if example {
